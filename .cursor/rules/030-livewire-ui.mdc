@@ -1,174 +1,155 @@
 ---
-description: "Convenciones de UI con Livewire 3 y Tailwind CSS."
+description: "Convenciones de UI con Livewire 3, Tailwind CSS y el Design System SE."
 globs: ["app/Livewire/**", "resources/views/**"]
+alwaysApply: false
 ---
 
-# Livewire UI — Convenciones
+# Livewire UI — Convenciones SistemasEscolares
+
+> **Ver también**: reglas 031 (Design System), 032 (Navegación), 033 (Accesibilidad), 035 (Validación)
 
 ## Estructura de un componente CRUD estándar
 
 ```php
-<?php
-
 namespace App\Livewire\Core;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Validate;
 use App\Models\Core\Terlec;
 
-class AbmCiclosLectivos extends Component
+class TerlecIndex extends Component
 {
     use WithPagination;
 
-    // Filtros
-    public string $buscar = '';
+    public string $search = '';
+    public bool   $showForm = false;
+    public ?int   $editId = null;
+    public ?int   $confirmDeleteId = null;
 
-    // Estado del modal
-    public bool $modalAbierto = false;
-    public bool $confirmandoBaja = false;
-    public ?int $editandoId = null;
+    #[Validate('required|integer|min:1990|max:2100')]
+    public ?int $ano = null;
 
-    // Campos del formulario
-    public int $ano = 0;
-    public int $orden = 1;
+    #[Validate('required|integer|min:0')]
+    public ?int $orden = null;
 
-    protected function rules(): array
+    public function updatedAno(): void  { $this->validateOnly('ano'); }
+    public function updatedOrden(): void { $this->validateOnly('orden'); }
+
+    public function crear(): void
     {
-        return [
-            'ano'    => 'required|integer|min:2000|max:2100',
-            'orden'  => 'required|integer|min:1',
-        ];
-    }
-
-    public function render()
-    {
-        $items = Terlec::when($this->buscar, fn($q) => $q->where('ano', 'like', "%{$this->buscar}%"))
-            ->orderBy('orden')
-            ->paginate(15);
-
-        return view('livewire.core.abm-ciclos-lectivos', compact('items'))
-            ->layout('layouts.staff');
-    }
-
-    public function nuevo(): void
-    {
-        $this->resetForm();
-        $this->modalAbierto = true;
+        $this->reset(['editId', 'ano', 'orden']);
+        $this->orden   = (int)(Terlec::max('orden') ?? 0) + 1;
+        $this->showForm = true;
     }
 
     public function editar(int $id): void
     {
         $item = Terlec::findOrFail($id);
-        $this->editandoId = $id;
-        $this->ano = $item->ano;
-        $this->orden = $item->orden;
-        $this->modalAbierto = true;
+        $this->editId = $id;
+        $this->ano    = $item->ano;
+        $this->orden  = $item->orden;
+        $this->showForm = true;
     }
 
     public function guardar(): void
     {
         $this->validate();
-        // ...crear o actualizar
-        $this->dispatch('toast', type: 'success', message: 'Guardado correctamente.');
-        $this->modalAbierto = false;
+        // crear/actualizar...
+        $this->dispatch('toast', message: 'Guardado correctamente.', type: 'success');
+        $this->cancelar();
     }
 
-    public function confirmarBaja(int $id): void
+    public function confirmarBorrar(int $id): void { $this->confirmDeleteId = $id; }
+
+    public function borrar(): void
     {
-        // Validar dependencias antes de mostrar confirmación
-        $this->editandoId = $id;
-        $this->confirmandoBaja = true;
+        Terlec::findOrFail($this->confirmDeleteId)->delete();
+        $this->dispatch('toast', message: 'Eliminado.', type: 'success');
+        $this->cancelar();
     }
 
-    public function eliminar(): void
+    public function cancelar(): void
     {
-        // Borrar y resetear
-    }
-
-    private function resetForm(): void
-    {
-        $this->editandoId = null;
-        $this->ano = date('Y');
-        $this->orden = 1;
+        $this->reset(['showForm', 'editId', 'ano', 'orden', 'confirmDeleteId']);
         $this->resetValidation();
+    }
+
+    public function render()
+    {
+        return view('livewire.core.terlec.index', [
+            'terlecs' => Terlec::orderBy('orden')->get(),
+        ]);
     }
 }
 ```
 
-## Estructura de vista Livewire
+## Estructura de vista Blade estándar
 
 ```blade
-{{-- resources/views/livewire/core/abm-ciclos-lectivos.blade.php --}}
 <div>
-    {{-- Header con título y botón de alta --}}
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Ciclos lectivos</h1>
-        <button wire:click="nuevo" class="btn-primary">
-            <x-lucide-plus class="w-4 h-4 mr-1" /> Nuevo ciclo
-        </button>
-    </div>
+    {{-- 1. Page header con breadcrumbs y acción primaria --}}
+    <x-ui.page-header title="Ciclos lectivos" :breadcrumbs="[…]">
+        <x-slot:actions>
+            <x-ui.button wire:click="crear" icon="plus">Nuevo</x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    {{-- Filtros --}}
-    <div class="mb-4">
-        <input wire:model.live.debounce.300ms="buscar"
-               type="text"
-               placeholder="Buscar por año..."
-               class="form-input w-full max-w-xs" />
-    </div>
+    {{-- 2. Flash messages --}}
+    @if(session('success')) <x-ui.alert variant="success" class="mb-4">…</x-ui.alert> @endif
 
-    {{-- Tabla responsiva --}}
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="th">Año</th>
-                    <th class="th">Orden</th>
-                    <th class="th">Acciones</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-100">
-                @forelse($items as $item)
-                    <tr class="hover:bg-gray-50">
-                        <td class="td">{{ $item->ano }}</td>
-                        <td class="td">{{ $item->orden }}</td>
-                        <td class="td">
-                            <button wire:click="editar({{ $item->id }})" class="btn-icon">
-                                <x-lucide-pencil class="w-4 h-4" />
-                            </button>
-                            <button wire:click="confirmarBaja({{ $item->id }})" class="btn-icon-danger">
-                                <x-lucide-trash-2 class="w-4 h-4" />
-                            </button>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="3" class="td text-center text-gray-400">
-                            No hay registros.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    {{ $items->links() }}
-
-    {{-- Modal alta/edición --}}
-    @if($modalAbierto)
-        <x-modal wire:model="modalAbierto" title="{{ $editandoId ? 'Editar' : 'Nuevo' }} ciclo lectivo">
-            <div class="space-y-4">
-                <x-form-input label="Año" wire:model="ano" type="number" />
-                <x-form-input label="Orden" wire:model="orden" type="number" />
-            </div>
-            <x-slot:footer>
-                <button wire:click="guardar" wire:loading.attr="disabled" class="btn-primary">
-                    <span wire:loading.remove>Guardar</span>
-                    <span wire:loading>Guardando...</span>
-                </button>
-                <button wire:click="$set('modalAbierto', false)" class="btn-secondary">Cancelar</button>
-            </x-slot:footer>
-        </x-modal>
+    {{-- 3. Formulario inline en card (si aplica) --}}
+    @if($showForm)
+        <x-ui.card class="mb-6">
+            <x-slot:title>Nuevo / Editar</x-slot:title>
+            <form wire:submit="guardar" class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="label label-required">Año</label>
+                    <input type="number" wire:model.blur="ano"
+                           class="input @error('ano') input-error @enderror" />
+                    @error('ano') <p class="error-msg">…{{ $message }}</p> @enderror
+                </div>
+                <div class="col-span-2 flex justify-end gap-3 border-t pt-4">
+                    <x-ui.button type="button" variant="ghost" wire:click="cancelar">Cancelar</x-ui.button>
+                    <x-ui.button type="submit" variant="primary" icon="check">Guardar</x-ui.button>
+                </div>
+            </form>
+        </x-ui.card>
     @endif
+
+    {{-- 4. Tabla con componentes UI --}}
+    <x-ui.table>
+        <thead>
+            <tr>
+                <x-ui.th>Año</x-ui.th>
+                <x-ui.th right>Acciones</x-ui.th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-100">
+            @forelse($terlecs as $item)
+                <tr class="tr-hover">
+                    <x-ui.td>{{ $item->ano }}</x-ui.td>
+                    <x-ui.td right>
+                        @if($confirmDeleteId == $item->id)
+                            <x-ui.button size="sm" variant="danger" wire:click="borrar">Sí</x-ui.button>
+                            <x-ui.button size="sm" variant="ghost"  wire:click="cancelar">No</x-ui.button>
+                        @else
+                            <button class="btn-icon" wire:click="editar({{ $item->id }})">
+                                <x-icons.pencil class="w-4 h-4" />
+                            </button>
+                            <button class="btn-icon-danger" wire:click="confirmarBorrar({{ $item->id }})">
+                                <x-icons.trash class="w-4 h-4" />
+                            </button>
+                        @endif
+                    </x-ui.td>
+                </tr>
+            @empty
+                <tr><td colspan="2" class="p-0">
+                    <x-ui.empty-state title="Sin registros" message="…" icon="calendar" />
+                </td></tr>
+            @endforelse
+        </tbody>
+    </x-ui.table>
 </div>
 ```
 
@@ -177,23 +158,15 @@ class AbmCiclosLectivos extends Component
 | Layout | Archivo | Uso |
 |---|---|---|
 | Staff | `layouts.staff` | Gestión (sidebar + topbar) |
-| Autogestión | `layouts.autogestion` | Alumnos (mobile-first, drawer) |
+| Autogestión | `layouts.autogestion` | Alumnos (mobile-first) |
 | Auth | `layouts.auth` | Login pages |
 
-## Responsividad
+## Reglas de oro
 
-- Tablas: siempre con `overflow-x-auto`
-- Formularios: `max-w-2xl mx-auto` en desktop, ancho completo en mobile
-- Sidebar: colapsable en desktop, drawer (off-canvas) en mobile
-- Autogestión: diseñada primero para 375px (iPhone SE), luego para desktop
-
-## Estados obligatorios en cada componente
-
-- `wire:loading` en botones de guardar/eliminar
-- Estado vacío (`@empty`) en listas
-- Mensajes de error de validación (`@error`)
-- Confirmación de baja con modal separado (no `confirm()` de JS)
-
-## Iconos
-
-Usar `lucide` vía componentes Blade: `<x-lucide-plus />`, `<x-lucide-trash-2 />`, etc.
+1. **Paleta**: solo tokens `brand.*`, `primary-*`, semánticos. No `indigo-*`, `gray-*` directos.
+2. **Componentes**: `<x-ui.button>`, `<x-ui.card>`, `<x-ui.table>`, `<x-ui.alert>`, etc. 
+3. **Iconos**: `<x-icons.nombre class="w-4 h-4" />` — Heroicons inline.
+4. **Validación**: `#[Validate]` + `validateOnly` en `updated*` + `validate()` en submit.
+5. **Mensajes**: `$this->dispatch('toast', message: '...', type: 'success|danger')`.
+6. **Navegación**: `wire:navigate` en todos los links internos.
+7. **Accesibilidad**: `aria-invalid`, `aria-describedby`, `aria-label` en botones-icono.

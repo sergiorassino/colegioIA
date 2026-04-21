@@ -15,9 +15,13 @@ Antes de hacer cualquier cambio, revisar las reglas en `.cursor/rules/`:
 | Archivo | Aplica a |
 |---|---|
 | `000-project-overview.mdc` | Siempre |
-| `010-db-schema-existente.mdc` | Siempre |
+| `010-db-schema-existente.mdc` | Siempre al tocar modelos/migraciones |
 | `020-laravel-conventions.mdc` | `app/**` |
 | `030-livewire-ui.mdc` | `app/Livewire/**`, `resources/views/**` |
+| `031-design-system.mdc` | Siempre al crear/editar vistas Blade |
+| `032-navegacion-layouts.mdc` | Pantallas nuevas, links de navegación |
+| `033-accesibilidad.mdc` | Formularios, tablas, modales, botones-icono |
+| `035-validacion-formularios.mdc` | Siempre en formularios Livewire |
 | `040-testing.mdc` | `tests/**`, `app/**` (cuando hay cambios) |
 | `050-calificaciones-multiproposito.mdc` | Siempre al tocar `calificaciones` |
 | `060-seguridad-auth.mdc` | Siempre |
@@ -33,6 +37,7 @@ Antes de hacer cualquier cambio, revisar las reglas en `.cursor/rules/`:
 | `nucleo-matricular-alumno` | Flujo de matriculación (alumno → matrícula + calificaciones) |
 | `auth-legacy-login` | Configurar guards/providers y LoginForm Livewire |
 | `auth-permisos-staff` | Chequear y agregar nuevos permisos |
+| `ui-nueva-pantalla` | Checklist al crear cualquier pantalla nueva (design system) |
 
 ## Flujo de trabajo
 
@@ -51,6 +56,10 @@ Antes de hacer cualquier cambio, revisar las reglas en `.cursor/rules/`:
 - ❌ Escribir `pwrd` en texto plano desde código nuevo
 - ❌ Cambiar `idMatPlan` de una materia existente sin pasar por `MateriaIntegridadService`
 - ❌ Commitear un módulo sin sus tests verdes
+- ❌ Usar clases Tailwind `indigo-*`, `blue-*`, `red-*`, `gray-*` directas — usar paleta SE
+- ❌ Importar Google Fonts ni librerías de iconos externas (Lucide, FontAwesome)
+- ❌ Crear pantallas sin `<x-ui.page-header>` y breadcrumbs
+- ❌ Agregar `Alpine.start()` manualmente (Livewire 3 lo gestiona)
 
 ## Estructura del proyecto
 

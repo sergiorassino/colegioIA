@@ -1,0 +1,79 @@
+---
+description: Estándar de validación de formularios Livewire — obligatorio en todos los componentes con formularios
+globs: app/Livewire/**/*.php,resources/views/livewire/**/*.blade.php
+alwaysApply: false
+---
+
+# Validación de formularios — SistemasEscolares
+
+## Patrón estándar en Livewire
+
+```php
+use Livewire\Attributes\Validate;
+
+// En el componente:
+#[Validate('required|digits_between:7,10')]
+public ?int $dni = null;
+
+// Feedback en blur:
+public function updatedDni(): void
+{
+    $this->validateOnly('dni');
+}
+
+// En submit:
+public function guardar(): void
+{
+    $this->validate();
+    // ... lógica de guardado
+    $this->dispatch('toast', message: 'Guardado', type: 'success');
+}
+```
+
+## Reglas estándar por tipo
+
+| Tipo | Regla |
+|---|---|
+| DNI | `required\|digits_between:7,10` |
+| Email | `nullable\|email:rfc` |
+| Teléfono | `nullable\|regex:/^[\d\s\-\+\(\)]{6,20}$/` |
+| Fecha | `nullable\|date\|before_or_equal:today` |
+| Año | `required\|integer\|min:1990\|max:2100` |
+| FK ID | `required\|integer\|exists:tabla,id` |
+| Nombre | `required\|string\|max:50` |
+| CUIT/CUIL | `nullable\|new App\Rules\CuitCuil` |
+| Permisos | `required\|regex:/^[01]+$/\|size:50` |
+
+## Mensajes siempre en español
+
+El archivo `lang/es/validation.php` es la fuente de verdad.
+No repetir mensajes genéricos en el componente.
+Agregar mensajes específicos solo para reglas custom:
+
+```php
+#[Validate(['required', 'digits_between:7,10'], message: [
+    'digits_between' => 'Ingrese un DNI válido (7 a 10 dígitos).',
+])]
+```
+
+## Vista Blade — mostrar errores
+
+```blade
+<input wire:model.blur="campo" class="input @error('campo') input-error @enderror"
+       @error('campo') aria-invalid="true" aria-describedby="campo-error" @enderror />
+
+@error('campo')
+    <p id="campo-error" class="error-msg" role="alert">
+        <x-icons.exclamation-triangle class="w-3.5 h-3.5 shrink-0" />
+        {{ $message }}
+    </p>
+@enderror
+```
+
+## UX obligatoria
+
+1. `wire:model.blur` (no `.live` salvo búsquedas).
+2. `wire:loading.attr="disabled"` en botón de submit.
+3. Scroll al primer campo inválido: `$this->dispatch('scroll-to-error')`.
+4. Resumen de errores si ≥ 3 campos: `<x-ui.alert variant="danger">`.
+5. Confirmación destructiva con modal para bajas críticas.

@@ -28,6 +28,9 @@ class StaffLoginForm extends Component
 
     public function login(): void
     {
+        $this->dni      = trim($this->dni);
+        $this->password = trim($this->password);
+
         $this->validate([
             'dni'      => ['required', 'string'],
             'password' => ['required', 'string'],

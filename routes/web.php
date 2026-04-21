@@ -31,22 +31,22 @@ Route::prefix('staff')->name('staff.')->group(function () {
         })->name('dashboard');
 
         // ── Parametrización ──────────────────────────────────────
-        Route::get('/ciclos',    \App\Livewire\Core\Terlec\TerlecIndex::class)->name('ciclos');
-        Route::get('/niveles',   \App\Livewire\Core\Nivel\NivelIndex::class)->name('niveles');
-        Route::get('/planes',    \App\Livewire\Core\Plan\PlanIndex::class)->name('planes');
-        Route::get('/curplanes', \App\Livewire\Core\CurPlan\CurPlanIndex::class)->name('curplanes');
-        Route::get('/entorno',   \App\Livewire\Core\Ento\EntoIndex::class)->name('entorno');
+        Route::get('/ciclos',    \App\Livewire\Core\Terlec\TerlecIndex::class)->name('terlec.index');
+        Route::get('/niveles',   \App\Livewire\Core\Nivel\NivelIndex::class)->name('nivel.index');
+        Route::get('/planes',    \App\Livewire\Core\Plan\PlanIndex::class)->name('plan.index');
+        Route::get('/curplanes', \App\Livewire\Core\CurPlan\CurPlanIndex::class)->name('curplan.index');
+        Route::get('/entorno',   \App\Livewire\Core\Ento\EntoIndex::class)->name('ento.index');
 
         // ── Cursos del año ───────────────────────────────────────
-        Route::get('/cursos', \App\Livewire\Core\Cursos\CursoIndex::class)->name('cursos');
+        Route::get('/cursos', \App\Livewire\Core\Cursos\CursoIndex::class)->name('cursos.index');
 
         // ── Legajos ──────────────────────────────────────────────
-        Route::get('/legajos',          \App\Livewire\Core\Legajos\LegajoIndex::class)->name('legajos');
+        Route::get('/legajos',          \App\Livewire\Core\Legajos\LegajoIndex::class)->name('legajos.index');
         Route::get('/legajos/crear',    \App\Livewire\Core\Legajos\LegajoForm::class)->name('legajos.crear');
         Route::get('/legajos/{id}',     \App\Livewire\Core\Legajos\LegajoForm::class)->name('legajos.editar');
 
         // ── Matriculación ────────────────────────────────────────
-        Route::get('/matriculas', \App\Livewire\Core\Matriculas\MatriculaIndex::class)->name('matriculas');
+        Route::get('/matriculas', \App\Livewire\Core\Matriculas\MatriculaIndex::class)->name('matriculas.index');
 
         // ── Permisos (requiere permiso 0 — administración) ───────
         Route::get('/permisos', function () {

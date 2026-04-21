@@ -27,8 +27,8 @@ class DatabaseSeeder extends Seeder
             PermisosUsuariosSeeder::class,
         ]);
 
-        // Solo para desarrollo — NO en producción
-        if (app()->environment(['local', 'testing'])) {
+        // Usuario admin de demo: cualquier entorno que no sea producción
+        if (! app()->environment('production')) {
             $this->call([
                 ProfesorAdminSeeder::class,
             ]);

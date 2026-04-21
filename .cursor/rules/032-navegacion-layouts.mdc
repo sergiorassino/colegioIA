@@ -1,0 +1,77 @@
+---
+description: Navegación y layouts — patrones obligatorios por tipo de pantalla
+globs: resources/views/**/*.blade.php,app/Livewire/**/*.php
+alwaysApply: false
+---
+
+# Navegación y layouts — SistemasEscolares
+
+## Layouts disponibles
+
+| Layout | Uso |
+|---|---|
+| `<x-layouts.auth>` | Páginas de login (staff y alumno) |
+| `<x-layouts.staff>` | Todas las pantallas de gestión (staff) |
+| `<x-layouts.autogestion>` | Autogestión de alumnos (mobile-first) |
+
+## Reglas de layout
+
+1. **Todo componente Livewire de gestión** → layout staff implícito via la ruta.
+2. **Páginas Blade de staff** → usar `<x-layouts.staff>` como wrapper.
+3. **No mezclar layouts** en la misma ruta.
+4. Los layouts incluyen `<x-ui.toast />` automáticamente.
+
+## Breadcrumbs — OBLIGATORIO en cada página
+
+Pasar como prop a `<x-ui.page-header>`:
+
+```blade
+<x-ui.page-header
+    title="Ciclos lectivos"
+    :breadcrumbs="[
+        ['label' => 'Inicio', 'href' => route('staff.dashboard')],
+        ['label' => 'Ciclos lectivos'],
+    ]"
+/>
+```
+
+El último item no lleva `href` (es la página actual).
+
+## Page header — OBLIGATORIO en páginas de gestión
+
+```blade
+<x-ui.page-header
+    title="Título"
+    subtitle="Subtítulo opcional"
+    :breadcrumbs="[…]"
+>
+    <x-slot:actions>
+        {{-- Botón primario de la pantalla --}}
+    </x-slot:actions>
+</x-ui.page-header>
+```
+
+## wire:navigate — OBLIGATORIO en links internos
+
+```blade
+<a href="{{ route('staff.dashboard') }}" wire:navigate>Inicio</a>
+```
+
+Esto activa la navegación SPA de Livewire sin recarga completa.
+
+## Sidebar staff
+
+Menu generado por `MenuResolver`. Cada item necesita una clave `icon` que corresponda
+a un componente en `resources/views/components/icons/`.
+
+```php
+// En MenuResolver
+['label' => 'Ciclos', 'route' => 'staff.terlec.index', 'icon' => 'calendar']
+```
+
+## Autogestión — reglas mobile-first
+
+- Max width: `max-w-xl mx-auto`
+- Padding bottom: `pb-24` (espacio para bottom nav)
+- No sidebar — usar bottom navigation de 4 ítems
+- Safe-area: `padding-bottom: env(safe-area-inset-bottom)` en nav y header

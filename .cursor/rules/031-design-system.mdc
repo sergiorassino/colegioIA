@@ -1,0 +1,56 @@
+---
+description: Design System SistemasEscolares — tokens de marca y componentes UI obligatorios
+globs: resources/views/**/*.blade.php,tailwind.config.js
+alwaysApply: false
+---
+
+# Design System SistemasEscolares
+
+## Paleta — NUNCA usar colores literales fuera de la paleta
+
+```
+brand.jet      = #333333  → text-brand-jet, bg-brand-jet
+brand.primary  = #40848D  → text-primary-*, bg-primary-*, border-primary-*
+brand.secondary= #739FA5  → text-brand-secondary
+brand.surface  = #C1D7DA  → bg-brand-surface, hover:bg-brand-surface/40
+brand.white    = #FFFFFF  → bg-white, text-white
+```
+
+Semánticos: `success-*`, `warning-*`, `danger-*`, `info-*`.
+
+**PROHIBIDO** usar `indigo-*`, `blue-*`, `red-*` directamente. Reemplazar siempre con la paleta SE.
+
+## Componentes — SIEMPRE usar `<x-ui.*>`
+
+| En vez de... | Usar |
+|---|---|
+| `<button class="bg-indigo-...">` | `<x-ui.button variant="primary">` |
+| `<input class="border-gray-...">` | `<x-ui.input>` o `class="input"` |
+| `<div class="rounded-lg shadow ring-...">` | `<x-ui.card>` |
+| `<table class="min-w-full divide-...">` | `<x-ui.table>` + `<x-ui.th>` + `<x-ui.td>` |
+| `<div class="bg-green-50...">` (alerta) | `<x-ui.alert variant="success">` |
+| Toast manual | `$this->dispatch('toast', message: '...', type: 'success')` |
+
+## Tipografía
+
+Sistema UI stack: ya definido en `tailwind.config.js → fontFamily.sans`.
+**No importar Google Fonts.** No añadir `@import url(fonts.googleapis.com...)`.
+
+## Iconos
+
+Usar exclusivamente Heroicons inline como componentes Blade:
+```blade
+<x-icons.plus class="w-4 h-4" />
+<x-icons.pencil class="w-4 h-4 text-primary-500" />
+```
+
+No importar paquetes de iconos externos. Agregar nuevos iconos en `resources/views/components/icons/`.
+
+## Sombras y radios estándar
+
+```
+Cards:   shadow-card + rounded-xl
+Modales: shadow-modal + rounded-xl
+Botones: rounded-lg
+Badges:  rounded-full
+```

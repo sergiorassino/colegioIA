@@ -1,78 +1,86 @@
 ﻿<div>
-    <div class="sm:flex sm:items-center sm:justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Niveles</h1>
-        @if(!$showForm)
-            <button wire:click="crear" class="mt-3 sm:mt-0 inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
-                + Nuevo nivel
-            </button>
-        @endif
-    </div>
+    <x-ui.page-header
+        title="Niveles"
+        subtitle="Niveles educativos del sistema"
+        :breadcrumbs="[['label' => 'Inicio', 'href' => route('staff.dashboard')], ['label' => 'Niveles']]"
+    >
+        <x-slot:actions>
+            @if(!$showForm)
+                <x-ui.button wire:click="crear" icon="plus">Nuevo nivel</x-ui.button>
+            @endif
+        </x-slot:actions>
+    </x-ui.page-header>
 
     @if(session('success'))
-        <div class="mb-4 rounded-md bg-green-50 border border-green-200 p-4 text-sm text-green-800">{{ session('success') }}</div>
+        <x-ui.alert variant="success" class="mb-4">{{ session('success') }}</x-ui.alert>
     @endif
     @if(session('error'))
-        <div class="mb-4 rounded-md bg-red-50 border border-red-200 p-4 text-sm text-red-800">{{ session('error') }}</div>
+        <x-ui.alert variant="danger" class="mb-4">{{ session('error') }}</x-ui.alert>
     @endif
 
     @if($showForm)
-        <div class="mb-6 bg-white rounded-lg shadow ring-1 ring-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ $editId ? 'Editar nivel' : 'Nuevo nivel' }}</h2>
+        <x-ui.card class="mb-6">
+            <x-slot:title>{{ $editId ? 'Editar nivel' : 'Nuevo nivel' }}</x-slot:title>
             <form wire:submit="guardar" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="sm:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del nivel</label>
-                    <input type="text" wire:model="nivel" maxlength="60"
-                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                    @error('nivel') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    <label class="label label-required">Nombre del nivel</label>
+                    <input type="text" wire:model.blur="nivel" maxlength="60"
+                           class="input @error('nivel') input-error @enderror" placeholder="Ej: Secundario"
+                           @error('nivel') aria-invalid="true" @enderror />
+                    @error('nivel') <p class="error-msg"><x-icons.exclamation-triangle class="w-3.5 h-3.5"/>{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Abreviatura (hasta 5 caracteres)</label>
-                    <input type="text" wire:model="abrev" maxlength="5"
-                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                    @error('abrev') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    <label class="label">Abreviatura <span class="text-neutral-400 font-normal">(hasta 5 car.)</span></label>
+                    <input type="text" wire:model.blur="abrev" maxlength="5"
+                           class="input @error('abrev') input-error @enderror" placeholder="Sec"
+                           @error('abrev') aria-invalid="true" @enderror />
+                    @error('abrev') <p class="error-msg"><x-icons.exclamation-triangle class="w-3.5 h-3.5"/>{{ $message }}</p> @enderror
                 </div>
-                <div class="sm:col-span-2 flex gap-3 justify-end">
-                    <button type="button" wire:click="cancelar" class="rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancelar</button>
-                    <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500" wire:loading.attr="disabled">
-                        <span wire:loading.remove>Guardar</span>
-                        <span wire:loading>Guardando...</span>
-                    </button>
+                <div class="sm:col-span-2 flex items-center justify-end gap-3 pt-2 border-t border-neutral-100">
+                    <x-ui.button type="button" variant="ghost" wire:click="cancelar">Cancelar</x-ui.button>
+                    <x-ui.button type="submit" variant="primary" icon="check">Guardar</x-ui.button>
                 </div>
             </form>
-        </div>
+        </x-ui.card>
     @endif
 
-    <div class="bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Abrev.</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+    <x-ui.table>
+        <thead>
+            <tr>
+                <x-ui.th>Nombre</x-ui.th>
+                <x-ui.th>Abrev.</x-ui.th>
+                <x-ui.th right>Acciones</x-ui.th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-100">
+            @forelse($this->niveles as $nivel)
+                <tr class="tr-hover">
+                    <x-ui.td><span class="font-medium text-brand-jet">{{ $nivel->nivel }}</span></x-ui.td>
+                    <x-ui.td><x-ui.badge variant="neutral">{{ $nivel->abrev }}</x-ui.badge></x-ui.td>
+                    <x-ui.td right>
+                        @if($confirmDeleteId == $nivel->id)
+                            <div class="flex items-center justify-end gap-2">
+                                <span class="text-xs text-danger-600 font-medium">¿Confirmar borrado?</span>
+                                <x-ui.button size="sm" variant="danger" wire:click="borrar">Sí</x-ui.button>
+                                <x-ui.button size="sm" variant="ghost" wire:click="cancelar">No</x-ui.button>
+                            </div>
+                        @else
+                            <div class="flex items-center justify-end gap-1">
+                                <button class="btn-icon" wire:click="editar({{ $nivel->id }})" title="Editar">
+                                    <x-icons.pencil class="w-4 h-4" />
+                                </button>
+                                <button class="btn-icon-danger" wire:click="confirmarBorrar({{ $nivel->id }})" title="Borrar">
+                                    <x-icons.trash class="w-4 h-4" />
+                                </button>
+                            </div>
+                        @endif
+                    </x-ui.td>
                 </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
-                @forelse($this->niveles as $nivel)
-                    <tr>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $nivel->nivel }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">{{ $nivel->abrev }}</td>
-                        <td class="px-6 py-4 text-right space-x-3">
-                            @if($confirmDeleteId == $nivel->id)
-                                <span class="text-sm text-red-600 font-medium">¿Confirmar?</span>
-                                <button wire:click="borrar" class="text-sm text-red-600 hover:text-red-800 font-medium">Sí, borrar</button>
-                                <button wire:click="cancelar" class="text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
-                            @else
-                                <button wire:click="editar({{ $nivel->id }})" class="text-sm text-indigo-600 hover:text-indigo-800">Editar</button>
-                                <button wire:click="confirmarBorrar({{ $nivel->id }})" class="text-sm text-red-500 hover:text-red-700">Borrar</button>
-                            @endif
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="3" class="px-6 py-8 text-center text-sm text-gray-400">No hay niveles registrados.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+            @empty
+                <tr><td colspan="3" class="p-0">
+                    <x-ui.empty-state title="Sin niveles" message="No hay niveles registrados aún." icon="academic-cap" />
+                </td></tr>
+            @endforelse
+        </tbody>
+    </x-ui.table>
 </div>

@@ -37,6 +37,31 @@ docs/                       → Documentación técnica
 - **Staff**: tras login se guardan `profesor_id`, `nivel_id`, `terlec_id` en sesión. Todos los CRUDs filtran por estos valores.
 - **Alumno**: `legajo_id` + nivel = `legajos.idnivel`. El ciclo de autogestión = `ento.idTerlecVerNotas` del nivel.
 
+## Design System (implementado)
+
+- **Paleta**: `brand.jet` `brand.primary` `brand.secondary` `brand.surface` + escalas `primary-*`, `neutral-*`, semánticos.
+- **Tipografía**: System UI stack — sin Google Fonts.
+- **Iconos**: Heroicons inline → `resources/views/components/icons/` (no lucide, no Font Awesome).
+- **Componentes**: `<x-ui.*>` para botones, inputs, cards, tablas, alerts, modales, etc.
+- **Layouts**: `layouts.auth`, `layouts.staff`, `layouts.autogestion`.
+- **Docs**: `docs/design-system.md`, `docs/ui-componentes.md`, `docs/validacion-formularios.md`, `docs/ux-patterns.md`, `docs/accesibilidad.md`.
+
+## Reglas de agente aplicables
+
+| Regla | Cuándo leer |
+|---|---|
+| `010-db-schema-existente` | Siempre al tocar modelos/migraciones |
+| `020-laravel-conventions` | Siempre al crear clases PHP |
+| `030-livewire-ui` | Siempre al crear/editar componentes Livewire o vistas |
+| `031-design-system` | Siempre al crear/editar vistas Blade |
+| `032-navegacion-layouts` | Al crear pantallas nuevas o links de navegación |
+| `033-accesibilidad` | Al crear formularios, tablas, modales, botones-icono |
+| `035-validacion-formularios` | Siempre en formularios Livewire |
+| `040-testing` | Al implementar cualquier feature |
+| `050-calificaciones-multiproposito` | Al tocar tabla `calificaciones` |
+| `060-seguridad-auth` | Siempre al tocar autenticación/permisos |
+| `070-integridad-curso-materia` | Al tocar `cursos`/`materias`/`matplan`/`curplan` |
+
 ## Reglas críticas (resumidas)
 
 1. ❌ No crear tabla `users` ni instalar `spatie/laravel-permission`
@@ -44,5 +69,8 @@ docs/                       → Documentación técnica
 3. ❌ No correr `migrate:fresh`/`rollback`/`refresh` en producción
 4. ❌ No escribir `pwrd` en plain text desde código nuevo
 5. ❌ No cambiar `materias.idMatPlan` sin pasar por `MateriaIntegridadService`
-6. ✅ Toda lectura/escritura de `calificaciones` pasa por `CalificacionesAdapter`
-7. ✅ Todo módulo nuevo lleva sus tests antes de marcarse como completo
+6. ❌ No usar `indigo-*`, `blue-*`, `red-*`, `gray-*` Tailwind directos — usar paleta SE
+7. ❌ No importar Google Fonts ni librerías de iconos externas (lucide, FontAwesome)
+8. ✅ Toda lectura/escritura de `calificaciones` pasa por `CalificacionesAdapter`
+9. ✅ Todo módulo nuevo lleva sus tests antes de marcarse como completo
+10. ✅ Toda pantalla nueva usa `<x-ui.page-header>`, `<x-ui.card>`, componentes SE

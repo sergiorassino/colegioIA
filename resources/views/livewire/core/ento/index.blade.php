@@ -1,154 +1,147 @@
 ﻿<div>
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Entorno institucional</h1>
-        <p class="mt-1 text-sm text-gray-500">Configure los datos institucionales y parámetros de autogestión por nivel.</p>
-    </div>
+    <x-ui.page-header
+        title="Entorno institucional"
+        subtitle="Configure los datos institucionales y parámetros de autogestión por nivel"
+        :breadcrumbs="[['label' => 'Inicio', 'href' => route('staff.dashboard')], ['label' => 'Entorno']]"
+    />
 
-    @if(session('success'))
-        <div class="mb-4 rounded-md bg-green-50 border border-green-200 p-4 text-sm text-green-800">{{ session('success') }}</div>
-    @endif
-    @if(session('error'))
-        <div class="mb-4 rounded-md bg-red-50 border border-red-200 p-4 text-sm text-red-800">{{ session('error') }}</div>
-    @endif
+    @if(session('success')) <x-ui.alert variant="success" class="mb-4">{{ session('success') }}</x-ui.alert> @endif
+    @if(session('error'))   <x-ui.alert variant="danger"  class="mb-4">{{ session('error') }}</x-ui.alert>   @endif
 
     {{-- Formulario de edición --}}
     @if($showForm)
-        <div class="mb-6 bg-white rounded-lg shadow ring-1 ring-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-5">Editar entorno</h2>
+        <x-ui.card class="mb-6">
+            <x-slot:title>Editar entorno</x-slot:title>
             <form wire:submit="guardar" class="space-y-6">
 
-                {{-- Datos institucionales --}}
-                <div>
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Datos institucionales</h3>
+                <x-ui.section title="Datos institucionales">
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Nivel</label>
-                            <select wire:model="idNivel" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" disabled>
+                            <label class="label">Nivel</label>
+                            <select wire:model="idNivel" class="input" disabled>
                                 @foreach($this->niveles as $n)
                                     <option value="{{ $n->id }}">{{ $n->nivel }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">CUE</label>
-                            <input type="text" wire:model="cue" maxlength="20"
-                                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <label class="label">CUE</label>
+                            <input type="text" wire:model.blur="cue" maxlength="20" class="input" placeholder="123456789" />
                         </div>
                         <div class="sm:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la institución</label>
-                            <input type="text" wire:model="insti" maxlength="255"
-                                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <label class="label">Nombre de la institución</label>
+                            <input type="text" wire:model.blur="insti" maxlength="255" class="input" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">CUIT</label>
-                            <input type="text" wire:model="cuit" maxlength="14"
-                                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <label class="label">CUIT</label>
+                            <input type="text" wire:model.blur="cuit" maxlength="14" class="input @error('cuit') input-error @enderror" placeholder="30-12345678-9" />
+                            @error('cuit') <p class="error-msg"><x-icons.exclamation-triangle class="w-3.5 h-3.5"/>{{ $message }}</p> @enderror
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                            <input type="text" wire:model="telefono" maxlength="50"
-                                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <label class="label">Teléfono</label>
+                            <input type="tel" wire:model.blur="telefono" maxlength="50" class="input" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-                            <input type="text" wire:model="direccion" maxlength="100"
-                                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <label class="label">Dirección</label>
+                            <input type="text" wire:model.blur="direccion" maxlength="100" class="input" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Localidad</label>
-                            <input type="text" wire:model="localidad" maxlength="100"
-                                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <label class="label">Localidad</label>
+                            <input type="text" wire:model.blur="localidad" maxlength="100" class="input" />
                         </div>
                         <div class="sm:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input type="email" wire:model="mail" maxlength="100"
-                                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <label class="label">Email institucional</label>
+                            <input type="email" wire:model.blur="mail" maxlength="100" class="input @error('mail') input-error @enderror" />
+                            @error('mail') <p class="error-msg"><x-icons.exclamation-triangle class="w-3.5 h-3.5"/>{{ $message }}</p> @enderror
                         </div>
                     </div>
-                </div>
+                </x-ui.section>
 
-                {{-- Autogestión --}}
-                <div class="border-t border-gray-200 pt-5">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Autogestión</h3>
+                <x-ui.section title="Autogestión" description="Define el ciclo lectivo que verán alumnos y docentes en la plataforma de autogestión">
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Ciclo lectivo para la plataforma de autogestión</label>
-                            <select wire:model="idTerlecVerNotas" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <label class="label">Ciclo lectivo de autogestión</label>
+                            <select wire:model.blur="idTerlecVerNotas" class="input @error('idTerlecVerNotas') input-error @enderror">
                                 <option value="">Sin asignar</option>
                                 @foreach($this->terlecs as $terlec)
                                     <option value="{{ $terlec->id }}">{{ $terlec->ano }}</option>
                                 @endforeach
                             </select>
+                            @error('idTerlecVerNotas') <p class="error-msg"><x-icons.exclamation-triangle class="w-3.5 h-3.5"/>{{ $message }}</p> @enderror
                         </div>
                     </div>
-                </div>
+                </x-ui.section>
 
-                {{-- Flags de disponibilidad --}}
-                <div class="border-t border-gray-200 pt-5">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Disponibilidad del sistema</h3>
+                <x-ui.section title="Disponibilidad del sistema" description="Controla qué funciones están habilitadas en la plataforma">
                     <div class="space-y-3">
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" wire:model="platOff" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                            <span class="text-sm text-gray-700">Plataforma de autogestión <strong>deshabilitada</strong></span>
-                        </label>
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" wire:model="verNotasOff" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                            <span class="text-sm text-gray-700">Visualización de notas <strong>deshabilitada</strong></span>
-                        </label>
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" wire:model="cargaNotasOff" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                            <span class="text-sm text-gray-700">Carga de calificaciones <strong>deshabilitada</strong></span>
-                        </label>
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" wire:model="matriculaWebOff" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                            <span class="text-sm text-gray-700">Matrícula web <strong>deshabilitada</strong></span>
-                        </label>
+                        @foreach([
+                            ['model' => 'platOff',        'label' => 'Plataforma de autogestión deshabilitada'],
+                            ['model' => 'verNotasOff',    'label' => 'Visualización de notas deshabilitada'],
+                            ['model' => 'cargaNotasOff',  'label' => 'Carga de calificaciones deshabilitada'],
+                            ['model' => 'matriculaWebOff','label' => 'Matrícula web deshabilitada'],
+                        ] as $flag)
+                            <label class="flex items-center gap-3 cursor-pointer group">
+                                <input type="checkbox" wire:model="{{ $flag['model'] }}"
+                                       class="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+                                <span class="text-sm text-neutral-700 group-hover:text-brand-jet transition-colors">
+                                    {{ $flag['label'] }}
+                                </span>
+                            </label>
+                        @endforeach
                     </div>
-                    <div class="mt-3">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Mensaje cuando la plataforma está deshabilitada</label>
-                        <textarea wire:model="offMensaje" rows="2" maxlength="500"
-                                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
+                    <div class="mt-4">
+                        <label class="label">Mensaje cuando la plataforma está deshabilitada</label>
+                        <textarea wire:model.blur="offMensaje" rows="2" maxlength="500"
+                                  class="input resize-none" placeholder="El sistema no está disponible en este momento…"></textarea>
                     </div>
-                </div>
+                </x-ui.section>
 
-                <div class="flex gap-3 justify-end pt-4 border-t border-gray-200">
-                    <button type="button" wire:click="cancelar" class="rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancelar</button>
-                    <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500" wire:loading.attr="disabled">
-                        <span wire:loading.remove>Guardar</span>
-                        <span wire:loading>Guardando...</span>
-                    </button>
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-neutral-100">
+                    <x-ui.button type="button" variant="ghost" wire:click="cancelar">Cancelar</x-ui.button>
+                    <x-ui.button type="submit" variant="primary" icon="check">Guardar cambios</x-ui.button>
                 </div>
             </form>
-        </div>
+        </x-ui.card>
     @endif
 
-    {{-- Lista de entornos --}}
+    {{-- Grid de entornos --}}
     @if(!$showForm)
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach($this->entos as $ento)
-                <div class="bg-white rounded-lg shadow ring-1 ring-gray-200 p-5">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">
-                                {{ $ento->nivel?->abrev }}
-                            </span>
-                            <h3 class="mt-2 text-sm font-semibold text-gray-900">{{ $ento->nivel?->nivel }}</h3>
+                <div class="card hover:shadow-md transition-shadow">
+                    <div class="card-body">
+                        <div class="flex items-start justify-between mb-3">
+                            <div>
+                                <x-ui.badge variant="primary">{{ $ento->nivel?->abrev }}</x-ui.badge>
+                                <h3 class="mt-2 text-sm font-semibold text-brand-jet">{{ $ento->nivel?->nivel }}</h3>
+                                <p class="text-xs text-neutral-500 mt-0.5">{{ $ento->insti }}</p>
+                            </div>
+                            <button class="btn-icon" wire:click="editar({{ $ento->Id }})" title="Editar">
+                                <x-icons.pencil class="w-4 h-4" />
+                            </button>
                         </div>
-                        <button wire:click="editar({{ $ento->Id }})" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                            Editar
-                        </button>
+
+                        <dl class="space-y-1.5 text-xs">
+                            @if($ento->terlecAutogesion)
+                                <div class="flex items-center gap-1.5">
+                                    <x-icons.calendar class="w-3.5 h-3.5 text-primary-400 shrink-0" />
+                                    <dd class="text-neutral-600">Autogestión: <strong>{{ $ento->terlecAutogesion->ano }}</strong></dd>
+                                </div>
+                            @else
+                                <div class="flex items-center gap-1.5">
+                                    <x-icons.exclamation-triangle class="w-3.5 h-3.5 text-warning-500 shrink-0" />
+                                    <dd class="text-warning-600 font-medium">Sin ciclo de autogestión</dd>
+                                </div>
+                            @endif
+
+                            @if($ento->platOff)
+                                <div class="flex items-center gap-1.5">
+                                    <x-icons.exclamation-triangle class="w-3.5 h-3.5 text-danger-500 shrink-0" />
+                                    <dd class="text-danger-600 font-semibold">Plataforma deshabilitada</dd>
+                                </div>
+                            @endif
+                        </dl>
                     </div>
-                    <dl class="space-y-1 text-xs text-gray-500">
-                        <dt class="font-medium text-gray-700">{{ $ento->insti }}</dt>
-                        @if($ento->terlecAutogesion)
-                            <dd>Autogestión: <span class="font-medium text-gray-700">{{ $ento->terlecAutogesion->ano }}</span></dd>
-                        @else
-                            <dd class="text-amber-600">Sin ciclo de autogestión asignado</dd>
-                        @endif
-                        @if($ento->platOff)
-                            <dd class="text-red-600 font-medium">⚠ Plataforma deshabilitada</dd>
-                        @endif
-                    </dl>
                 </div>
             @endforeach
         </div>

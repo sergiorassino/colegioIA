@@ -1,90 +1,91 @@
 ﻿<div>
-    <div class="sm:flex sm:items-center sm:justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Planes de estudio</h1>
-        @if(!$showForm)
-            <button wire:click="crear" class="mt-3 sm:mt-0 inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
-                + Nuevo plan
-            </button>
-        @endif
-    </div>
+    <x-ui.page-header
+        title="Planes de estudio"
+        subtitle="Planes de estudio por nivel"
+        :breadcrumbs="[['label' => 'Inicio', 'href' => route('staff.dashboard')], ['label' => 'Planes']]"
+    >
+        <x-slot:actions>
+            @if(!$showForm)
+                <x-ui.button wire:click="crear" icon="plus">Nuevo plan</x-ui.button>
+            @endif
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    @if(session('success'))
-        <div class="mb-4 rounded-md bg-green-50 border border-green-200 p-4 text-sm text-green-800">{{ session('success') }}</div>
-    @endif
-    @if(session('error'))
-        <div class="mb-4 rounded-md bg-red-50 border border-red-200 p-4 text-sm text-red-800">{{ session('error') }}</div>
-    @endif
+    @if(session('success')) <x-ui.alert variant="success" class="mb-4">{{ session('success') }}</x-ui.alert> @endif
+    @if(session('error'))   <x-ui.alert variant="danger"  class="mb-4">{{ session('error') }}</x-ui.alert>   @endif
 
     @if($showForm)
-        <div class="mb-6 bg-white rounded-lg shadow ring-1 ring-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ $editId ? 'Editar plan' : 'Nuevo plan de estudio' }}</h2>
+        <x-ui.card class="mb-6">
+            <x-slot:title>{{ $editId ? 'Editar plan' : 'Nuevo plan de estudio' }}</x-slot:title>
             <form wire:submit="guardar" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nivel</label>
-                    <select wire:model="idNivel" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                        <option value="">Seleccione un nivel...</option>
-                        @foreach($this->niveles as $nivel)
-                            <option value="{{ $nivel->id }}">{{ $nivel->nivel }}</option>
+                    <label class="label label-required">Nivel</label>
+                    <select wire:model.blur="idNivel" class="input @error('idNivel') input-error @enderror"
+                            @error('idNivel') aria-invalid="true" @enderror>
+                        <option value="">Seleccione un nivel…</option>
+                        @foreach($this->niveles as $n)
+                            <option value="{{ $n->id }}">{{ $n->nivel }}</option>
                         @endforeach
                     </select>
-                    @error('idNivel') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('idNivel') <p class="error-msg"><x-icons.exclamation-triangle class="w-3.5 h-3.5"/>{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Abreviatura (hasta 5 car.)</label>
-                    <input type="text" wire:model="abrev" maxlength="5"
-                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                    @error('abrev') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    <label class="label">Abreviatura <span class="text-neutral-400 font-normal">(hasta 5 car.)</span></label>
+                    <input type="text" wire:model.blur="abrev" maxlength="5"
+                           class="input @error('abrev') input-error @enderror" placeholder="ES"
+                           @error('abrev') aria-invalid="true" @enderror />
+                    @error('abrev') <p class="error-msg"><x-icons.exclamation-triangle class="w-3.5 h-3.5"/>{{ $message }}</p> @enderror
                 </div>
                 <div class="sm:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del plan</label>
-                    <input type="text" wire:model="plan" maxlength="70"
-                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                    @error('plan') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    <label class="label label-required">Nombre del plan</label>
+                    <input type="text" wire:model.blur="plan" maxlength="70"
+                           class="input @error('plan') input-error @enderror" placeholder="Plan de Estudios Orientado"
+                           @error('plan') aria-invalid="true" @enderror />
+                    @error('plan') <p class="error-msg"><x-icons.exclamation-triangle class="w-3.5 h-3.5"/>{{ $message }}</p> @enderror
                 </div>
-                <div class="sm:col-span-2 flex gap-3 justify-end">
-                    <button type="button" wire:click="cancelar" class="rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancelar</button>
-                    <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500" wire:loading.attr="disabled">
-                        <span wire:loading.remove>Guardar</span>
-                        <span wire:loading>Guardando...</span>
-                    </button>
+                <div class="sm:col-span-2 flex items-center justify-end gap-3 pt-2 border-t border-neutral-100">
+                    <x-ui.button type="button" variant="ghost" wire:click="cancelar">Cancelar</x-ui.button>
+                    <x-ui.button type="submit" variant="primary" icon="check">Guardar</x-ui.button>
                 </div>
             </form>
-        </div>
+        </x-ui.card>
     @endif
 
-    <div class="bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nivel</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Abrev.</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+    <x-ui.table>
+        <thead>
+            <tr>
+                <x-ui.th>Nivel</x-ui.th>
+                <x-ui.th>Plan</x-ui.th>
+                <x-ui.th>Abrev.</x-ui.th>
+                <x-ui.th right>Acciones</x-ui.th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-100">
+            @forelse($this->planes as $plan)
+                <tr class="tr-hover">
+                    <x-ui.td><x-ui.badge variant="primary">{{ $plan->nivel?->nivel }}</x-ui.badge></x-ui.td>
+                    <x-ui.td><span class="font-medium text-brand-jet">{{ $plan->plan }}</span></x-ui.td>
+                    <x-ui.td>{{ $plan->abrev }}</x-ui.td>
+                    <x-ui.td right>
+                        @if($confirmDeleteId == $plan->id)
+                            <div class="flex items-center justify-end gap-2">
+                                <span class="text-xs text-danger-600 font-medium">¿Confirmar borrado?</span>
+                                <x-ui.button size="sm" variant="danger" wire:click="borrar">Sí</x-ui.button>
+                                <x-ui.button size="sm" variant="ghost" wire:click="cancelar">No</x-ui.button>
+                            </div>
+                        @else
+                            <div class="flex items-center justify-end gap-1">
+                                <button class="btn-icon" wire:click="editar({{ $plan->id }})" title="Editar"><x-icons.pencil class="w-4 h-4"/></button>
+                                <button class="btn-icon-danger" wire:click="confirmarBorrar({{ $plan->id }})" title="Borrar"><x-icons.trash class="w-4 h-4"/></button>
+                            </div>
+                        @endif
+                    </x-ui.td>
                 </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
-                @forelse($this->planes as $plan)
-                    <tr>
-                        <td class="px-6 py-4 text-sm text-gray-500">{{ $plan->nivel?->nivel }}</td>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $plan->plan }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">{{ $plan->abrev }}</td>
-                        <td class="px-6 py-4 text-right space-x-3">
-                            @if($confirmDeleteId == $plan->id)
-                                <span class="text-sm text-red-600 font-medium">¿Confirmar?</span>
-                                <button wire:click="borrar" class="text-sm text-red-600 hover:text-red-800 font-medium">Sí, borrar</button>
-                                <button wire:click="cancelar" class="text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
-                            @else
-                                <button wire:click="editar({{ $plan->id }})" class="text-sm text-indigo-600 hover:text-indigo-800">Editar</button>
-                                <button wire:click="confirmarBorrar({{ $plan->id }})" class="text-sm text-red-500 hover:text-red-700">Borrar</button>
-                            @endif
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-400">No hay planes registrados.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+            @empty
+                <tr><td colspan="4" class="p-0">
+                    <x-ui.empty-state title="Sin planes" message="No hay planes registrados aún." icon="document-text" />
+                </td></tr>
+            @endforelse
+        </tbody>
+    </x-ui.table>
 </div>

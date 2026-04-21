@@ -1,0 +1,77 @@
+---
+description: Accesibilidad WCAG 2.1 AA — requisitos obligatorios en toda pantalla nueva
+globs: resources/views/**/*.blade.php
+alwaysApply: false
+---
+
+# Accesibilidad — SistemasEscolares
+
+## Focus visible — OBLIGATORIO
+
+Todo control interactivo debe tener focus ring:
+```css
+focus-visible:ring-2 ring-primary-500 ring-offset-2
+```
+
+Los componentes `<x-ui.*>` lo incluyen automáticamente.
+Para controles custom, agregar explícitamente.
+
+## ARIA en formularios — OBLIGATORIO
+
+```blade
+{{-- Cuando hay error --}}
+<input aria-invalid="true" aria-describedby="campo-error" />
+<p id="campo-error" class="error-msg" role="alert">…</p>
+
+{{-- Labels asociados --}}
+<label for="dni" class="label">DNI</label>
+<input id="dni" type="text" />
+```
+
+Los componentes `<x-ui.input>`, `<x-ui.select>`, `<x-ui.textarea>` manejan esto automáticamente.
+
+## Botones solo-icono — OBLIGATORIO
+
+```blade
+<button class="btn-icon" aria-label="Editar ciclo lectivo 2025">
+    <x-icons.pencil class="w-4 h-4" aria-hidden="true" />
+</button>
+```
+
+## Modales — OBLIGATORIO
+
+```blade
+<div role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h2 id="modal-title">…</h2>
+    …
+</div>
+```
+
+El componente `<x-ui.modal>` lo incluye automáticamente.
+ESC debe cerrar el modal.
+
+## Navegaciones — OBLIGATORIO
+
+```blade
+<nav aria-label="Menú principal">…</nav>
+<nav aria-label="Ruta de navegación">…</nav>
+<nav aria-label="Paginación">…</nav>
+```
+
+## Tablas — OBLIGATORIO
+
+```blade
+<th scope="col">Nombre</th>
+<th scope="row">Dato de fila</th>
+```
+
+## Contraste mínimo
+
+- Texto normal: ratio ≥ 4.5:1
+- Texto grande (≥ 18px bold): ratio ≥ 3:1
+- Paleta SE validada en docs/accesibilidad.md
+
+## Movimiento reducido
+
+Ya declarado globalmente en `resources/css/app.css`.
+No añadir animaciones sin respetar `prefers-reduced-motion`.
