@@ -1,0 +1,48 @@
+---
+description: "Visión general del proyecto SistemasEscolares. Leer antes de cualquier cambio."
+alwaysApply: true
+---
+
+# SistemasEscolares — Resumen del proyecto
+
+## Stack
+
+- **Backend**: Laravel 11 (PHP 8.2+)
+- **Frontend**: Livewire 3 + Alpine.js + Tailwind CSS (mobile-first autogestión, desktop-first gestión)
+- **BD**: MySQL existente en producción — **NO crear ni modificar tablas legacy sin migración nueva**
+- **Auth**: tablas `profesores` (staff) y `legajos` (alumnos) — sin tabla `users` ni `spatie/laravel-permission`
+- **Testing**: Pest 3 + Larastan (nivel 6) + Pint
+
+## Estructura de directorios clave
+
+```
+app/
+  Models/Core/     → Terlec, Nivel, Plan, CurPlan, MatPlan, Curso, Materia, Legajo, Matricula, Ento
+  Models/Auth/     → Profesor (Authenticatable), LegajoAuth, ProfesorTipo, PermisoUsuario
+  Auth/            → LegacyUserProvider, PermisosService, PermisoSlugMap, MenuResolver, ContextoStaff
+  Http/Middleware/ → EnsureStaffAuth, EnsureAlumnoAuth, EnsurePermiso, InjectStaffContext
+  Livewire/Auth/   → StaffLoginForm, AlumnoLoginForm
+  Livewire/Core/   → CRUDs del núcleo
+  Services/        → GenerarCursoService, MatricularAlumnoService, MateriaIntegridadService, CalificacionesAdapter, EntornoService
+database/
+  schema/mysql-schema.sql   → Foto del schema legacy (NO editar a mano)
+  migrations/               → Solo aditivas + evolutivas nuevas
+docs/                       → Documentación técnica
+.cursor/rules/              → Reglas para agentes (este directorio)
+.cursor/skills/             → Skills especializados
+```
+
+## Contexto de sesión
+
+- **Staff**: tras login se guardan `profesor_id`, `nivel_id`, `terlec_id` en sesión. Todos los CRUDs filtran por estos valores.
+- **Alumno**: `legajo_id` + nivel = `legajos.idnivel`. El ciclo de autogestión = `ento.idTerlecVerNotas` del nivel.
+
+## Reglas críticas (resumidas)
+
+1. ❌ No crear tabla `users` ni instalar `spatie/laravel-permission`
+2. ❌ No editar `mysql-schema.sql` a mano
+3. ❌ No correr `migrate:fresh`/`rollback`/`refresh` en producción
+4. ❌ No escribir `pwrd` en plain text desde código nuevo
+5. ❌ No cambiar `materias.idMatPlan` sin pasar por `MateriaIntegridadService`
+6. ✅ Toda lectura/escritura de `calificaciones` pasa por `CalificacionesAdapter`
+7. ✅ Todo módulo nuevo lleva sus tests antes de marcarse como completo

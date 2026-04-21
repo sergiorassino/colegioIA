@@ -1,0 +1,101 @@
+---
+description: "Reglas para trabajar con el schema MySQL existente. Siempre activo."
+alwaysApply: true
+---
+
+# Schema de BD existente — Reglas obligatorias
+
+## Plantilla de modelo Eloquent sobre tabla legacy
+
+```php
+<?php
+
+namespace App\Models\Core;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Curso extends Model
+{
+    protected $table = 'cursos';
+    protected $primaryKey = 'Id';  // ← MAYÚSCULA para cursos y ento
+    public $incrementing = true;
+    protected $keyType = 'int';
+    public $timestamps = false;    // ← SIEMPRE false: ninguna tabla legacy tiene timestamps
+
+    protected $fillable = ['orden', 'idCurPlan', 'idTerlec', 'idNivel', 'cursec', 'c', 's', 'turno'];
+
+    // FKs en camelCase (como en la BD legacy)
+    public function curPlan(): BelongsTo
+    {
+        return $this->belongsTo(CurPlan::class, 'idCurPlan', 'id');
+    }
+
+    public function terlec(): BelongsTo
+    {
+        return $this->belongsTo(Terlec::class, 'idTerlec', 'id');
+    }
+
+    public function nivel(): BelongsTo
+    {
+        return $this->belongsTo(Nivel::class, 'idNivel', 'id');
+    }
+
+    public function materias(): HasMany
+    {
+        // FK local, PK owner = 'Id' (mayúscula de cursos)
+        return $this->hasMany(Materia::class, 'idCursos', 'Id');
+    }
+}
+```
+
+## PKs especiales
+
+| Tabla | PK | Nota |
+|---|---|---|
+| `cursos` | `Id` (mayúscula) | `protected $primaryKey = 'Id'` |
+| `ento` | `Id` (mayúscula) | `protected $primaryKey = 'Id'` |
+| `terlec` | `id` | Usa `KEY id` sin `PRIMARY KEY` declarado, pero funciona igual |
+| `condiciones` | `id` | Igual que terlec |
+| `profesortipo` | `id` | Igual que terlec |
+
+## Sin timestamps
+
+**TODAS** las tablas legacy NO tienen `created_at`/`updated_at`. Siempre declarar:
+
+```php
+public $timestamps = false;
+```
+
+## Relaciones con FK explícitas
+
+Las FKs legacy están en camelCase. Siempre especificar los nombres:
+
+```php
+// belongsTo($related, $foreignKey, $ownerKey)
+$this->belongsTo(Terlec::class, 'idTerlec', 'id');
+
+// hasMany($related, $foreignKey, $localKey)
+$this->hasMany(Materia::class, 'idCursos', 'Id');  // 'Id' = PK de cursos (mayúscula)
+
+// belongsTo con FK hacia cursos (PK mayúscula)
+$this->belongsTo(Curso::class, 'idCursos', 'Id');
+```
+
+## Reglas de migraciones
+
+1. El schema legacy está snapshotado en `database/schema/mysql-schema.sql`. **NO editar a mano**.
+2. Nuevas tablas o cambios → **nueva migración** en `database/migrations/`.
+3. Migraciones aditivas (nuevas tablas que no existían en prod) → proteger con `Schema::hasTable()`.
+4. Columnas nuevas en tablas legacy → **nullable o con default** para no romper datos existentes.
+5. **Prohibido en producción**: `migrate:fresh`, `migrate:rollback`, `migrate:refresh`.
+6. Toda migración tiene `up()` y `down()` simétricas.
+7. Para rename/drop de columnas legacy con datos → patrón expand-contract obligatorio.
+8. Todo PR con migración incluye: modelo actualizado + `docs/modelo-datos.md` actualizado + tests Pest.
+
+## Collations
+
+Las tablas tienen collations mezclados (`utf8_unicode_ci`, `utf8_spanish_ci`, `latin1`).
+Al hacer queries que comparan strings entre tablas de distinto charset, usar `BINARY` o `COLLATE` explícito
+si hay problemas de comparación. No asumir que todos los strings son iguales.

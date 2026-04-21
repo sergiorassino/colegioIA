@@ -1,0 +1,73 @@
+---
+description: "Reglas para leer/escribir la tabla calificaciones. Siempre usar CalificacionesAdapter."
+alwaysApply: true
+---
+
+# Calificaciones multipropósito — Reglas
+
+## Contexto
+
+La tabla `calificaciones` tiene 40 columnas `ic01..ic40` + 6 `tm1..tm6` + `dic` + `feb` que tienen
+**semántica diferente según el nivel educativo**:
+
+| Nivel | ic01..ic12 | ic13..ic40 | tm1..tm6 | dic | feb |
+|---|---|---|---|---|---|
+| Inicial | Indicadores IEF por etapas | — | — | — | — |
+| Primario | Períodos del año | — | Trimestres | Promedio dic | Recuperatorio feb |
+| Secundario | Bimestres/etapas | Previas | Trimestres | Dic | Feb |
+
+## Regla fundamental
+
+**PROHIBIDO** acceder directamente a `ic01..ic40`, `tm1..tm6`, `dic`, `feb` en controllers,
+Livewire components, o vistas. **Toda** lectura y escritura pasa por `CalificacionesAdapter`.
+
+## Uso correcto
+
+```php
+use App\Services\CalificacionesAdapter;
+
+// ✅ CORRECTO
+$adapter = app(CalificacionesAdapter::class);
+$datos = $adapter->paraSecundario($calificacion);
+// $datos['bimestre1'] = $calificacion->ic01, etc.
+
+// ❌ INCORRECTO
+$nota = $calificacion->ic01;  // No usar directamente
+```
+
+## Métodos del adapter
+
+```php
+interface CalificacionesAdapterContract
+{
+    /** Retorna array con campos de dominio para nivel Inicial */
+    public function paraInicial(Calificacion $c): array;
+
+    /** Retorna array con campos de dominio para nivel Primario */
+    public function paraPrimario(Calificacion $c): array;
+
+    /** Retorna array con campos de dominio para nivel Secundario */
+    public function paraSecundario(Calificacion $c): array;
+
+    /** Escribe desde campos de dominio al modelo (sin guardar) */
+    public function escribirDesde(Calificacion $c, array $datos, string $nivel): void;
+}
+```
+
+## Al crear registros de calificaciones
+
+Al crear registros vacíos (en matriculación), todos los campos ic01..ic40, tm1..tm6, dic, feb
+se dejan en su valor default (`''`). No inicializar con nulos ni ceros.
+
+```php
+Calificacion::create([
+    'idLegajos'   => $legajoId,
+    'idMatricula' => $matriculaId,
+    'idMaterias'  => $materia->id,
+    'idMatPlan'   => $materia->idMatPlan,
+    'idTerlec'    => $terlecId,
+    'idCursos'    => $cursoId,
+    'ord'         => $materia->ord,
+    // ic01..ic40, tm1..tm6, dic, feb quedan en default ''
+]);
+```

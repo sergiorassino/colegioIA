@@ -1,0 +1,81 @@
+---
+description: "Convenciones Laravel para este proyecto."
+globs: ["app/**", "config/**", "routes/**", "database/**"]
+---
+
+# Convenciones Laravel — SistemasEscolares
+
+## Namespaces
+
+| Tipo | Namespace | Directorio |
+|---|---|---|
+| Modelos núcleo | `App\Models\Core` | `app/Models/Core/` |
+| Modelos auth | `App\Models\Auth` | `app/Models/Auth/` |
+| Auth providers/services | `App\Auth` | `app/Auth/` |
+| Middlewares | `App\Http\Middleware` | `app/Http/Middleware/` |
+| Servicios | `App\Services` | `app/Services/` |
+| Livewire auth | `App\Livewire\Auth` | `app/Livewire/Auth/` |
+| Livewire core | `App\Livewire\Core` | `app/Livewire/Core/` |
+
+## Guards (config/auth.php)
+
+- Guard `staff`: modelo `App\Models\Auth\Profesor`, tabla `profesores`, campo usuario `dni`
+- Guard `alumno`: modelo `App\Models\Auth\LegajoAuth`, tabla `legajos`, campo usuario `dni`
+- El guard default de Laravel (`web`) NO se usa para autenticación del sistema
+
+## Servicios transaccionales
+
+Todos los servicios con efectos de escritura múltiple usan `DB::transaction()`:
+
+```php
+public function ejecutar(array $datos): Matricula
+{
+    return DB::transaction(function () use ($datos) {
+        $matricula = Matricula::create([...]);
+
+        foreach ($materias as $materia) {
+            Calificacion::create([
+                'idMatricula' => $matricula->id,
+                // ...
+            ]);
+        }
+
+        return $matricula;
+    });
+}
+```
+
+## Rutas
+
+- Staff: prefijo `/staff/`, middleware `['auth:staff', 'staff.context']`
+- Alumno: prefijo `/alumno/`, middleware `['auth:alumno', 'alumno.context']`
+- Login staff: `/login/staff`
+- Login alumno: `/login/alumno`
+
+## Seeders
+
+Los seeders cargan datos de `bd_con_datos.sql` de forma reproducible.
+Usar `DB::table()->upsert()` o `firstOrCreate()` para ser idempotentes.
+
+## Provider de servicios
+
+Registrar en `AppServiceProvider`:
+- `PermisosService` como singleton (carga los Gates al arrancar)
+- `ContextoStaff` como singleton por request
+- `ContextoAutogestion` como singleton por request
+
+## Configuración de BD en .env
+
+```env
+# BD principal (producción/staging)
+DB_HOST=127.0.0.1
+DB_DATABASE=ia_demo
+DB_USERNAME=root
+DB_PASSWORD=
+
+# BD de testing
+DB_TESTING_HOST=127.0.0.1
+DB_TESTING_DATABASE=ia_demo_testing
+DB_TESTING_USERNAME=root
+DB_TESTING_PASSWORD=
+```

@@ -1,0 +1,199 @@
+---
+description: "Convenciones de UI con Livewire 3 y Tailwind CSS."
+globs: ["app/Livewire/**", "resources/views/**"]
+---
+
+# Livewire UI — Convenciones
+
+## Estructura de un componente CRUD estándar
+
+```php
+<?php
+
+namespace App\Livewire\Core;
+
+use Livewire\Component;
+use Livewire\WithPagination;
+use App\Models\Core\Terlec;
+
+class AbmCiclosLectivos extends Component
+{
+    use WithPagination;
+
+    // Filtros
+    public string $buscar = '';
+
+    // Estado del modal
+    public bool $modalAbierto = false;
+    public bool $confirmandoBaja = false;
+    public ?int $editandoId = null;
+
+    // Campos del formulario
+    public int $ano = 0;
+    public int $orden = 1;
+
+    protected function rules(): array
+    {
+        return [
+            'ano'    => 'required|integer|min:2000|max:2100',
+            'orden'  => 'required|integer|min:1',
+        ];
+    }
+
+    public function render()
+    {
+        $items = Terlec::when($this->buscar, fn($q) => $q->where('ano', 'like', "%{$this->buscar}%"))
+            ->orderBy('orden')
+            ->paginate(15);
+
+        return view('livewire.core.abm-ciclos-lectivos', compact('items'))
+            ->layout('layouts.staff');
+    }
+
+    public function nuevo(): void
+    {
+        $this->resetForm();
+        $this->modalAbierto = true;
+    }
+
+    public function editar(int $id): void
+    {
+        $item = Terlec::findOrFail($id);
+        $this->editandoId = $id;
+        $this->ano = $item->ano;
+        $this->orden = $item->orden;
+        $this->modalAbierto = true;
+    }
+
+    public function guardar(): void
+    {
+        $this->validate();
+        // ...crear o actualizar
+        $this->dispatch('toast', type: 'success', message: 'Guardado correctamente.');
+        $this->modalAbierto = false;
+    }
+
+    public function confirmarBaja(int $id): void
+    {
+        // Validar dependencias antes de mostrar confirmación
+        $this->editandoId = $id;
+        $this->confirmandoBaja = true;
+    }
+
+    public function eliminar(): void
+    {
+        // Borrar y resetear
+    }
+
+    private function resetForm(): void
+    {
+        $this->editandoId = null;
+        $this->ano = date('Y');
+        $this->orden = 1;
+        $this->resetValidation();
+    }
+}
+```
+
+## Estructura de vista Livewire
+
+```blade
+{{-- resources/views/livewire/core/abm-ciclos-lectivos.blade.php --}}
+<div>
+    {{-- Header con título y botón de alta --}}
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Ciclos lectivos</h1>
+        <button wire:click="nuevo" class="btn-primary">
+            <x-lucide-plus class="w-4 h-4 mr-1" /> Nuevo ciclo
+        </button>
+    </div>
+
+    {{-- Filtros --}}
+    <div class="mb-4">
+        <input wire:model.live.debounce.300ms="buscar"
+               type="text"
+               placeholder="Buscar por año..."
+               class="form-input w-full max-w-xs" />
+    </div>
+
+    {{-- Tabla responsiva --}}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="th">Año</th>
+                    <th class="th">Orden</th>
+                    <th class="th">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100">
+                @forelse($items as $item)
+                    <tr class="hover:bg-gray-50">
+                        <td class="td">{{ $item->ano }}</td>
+                        <td class="td">{{ $item->orden }}</td>
+                        <td class="td">
+                            <button wire:click="editar({{ $item->id }})" class="btn-icon">
+                                <x-lucide-pencil class="w-4 h-4" />
+                            </button>
+                            <button wire:click="confirmarBaja({{ $item->id }})" class="btn-icon-danger">
+                                <x-lucide-trash-2 class="w-4 h-4" />
+                            </button>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="3" class="td text-center text-gray-400">
+                            No hay registros.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    {{ $items->links() }}
+
+    {{-- Modal alta/edición --}}
+    @if($modalAbierto)
+        <x-modal wire:model="modalAbierto" title="{{ $editandoId ? 'Editar' : 'Nuevo' }} ciclo lectivo">
+            <div class="space-y-4">
+                <x-form-input label="Año" wire:model="ano" type="number" />
+                <x-form-input label="Orden" wire:model="orden" type="number" />
+            </div>
+            <x-slot:footer>
+                <button wire:click="guardar" wire:loading.attr="disabled" class="btn-primary">
+                    <span wire:loading.remove>Guardar</span>
+                    <span wire:loading>Guardando...</span>
+                </button>
+                <button wire:click="$set('modalAbierto', false)" class="btn-secondary">Cancelar</button>
+            </x-slot:footer>
+        </x-modal>
+    @endif
+</div>
+```
+
+## Layouts disponibles
+
+| Layout | Archivo | Uso |
+|---|---|---|
+| Staff | `layouts.staff` | Gestión (sidebar + topbar) |
+| Autogestión | `layouts.autogestion` | Alumnos (mobile-first, drawer) |
+| Auth | `layouts.auth` | Login pages |
+
+## Responsividad
+
+- Tablas: siempre con `overflow-x-auto`
+- Formularios: `max-w-2xl mx-auto` en desktop, ancho completo en mobile
+- Sidebar: colapsable en desktop, drawer (off-canvas) en mobile
+- Autogestión: diseñada primero para 375px (iPhone SE), luego para desktop
+
+## Estados obligatorios en cada componente
+
+- `wire:loading` en botones de guardar/eliminar
+- Estado vacío (`@empty`) en listas
+- Mensajes de error de validación (`@error`)
+- Confirmación de baja con modal separado (no `confirm()` de JS)
+
+## Iconos
+
+Usar `lucide` vía componentes Blade: `<x-lucide-plus />`, `<x-lucide-trash-2 />`, etc.

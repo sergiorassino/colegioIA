@@ -1,0 +1,150 @@
+---
+description: "Reglas de testing. Obligatorio para todo módulo nuevo."
+alwaysApply: true
+globs: ["tests/**", "app/**"]
+---
+
+# Testing — Reglas obligatorias
+
+## Definition of Done
+
+**Un módulo NO está terminado hasta que:**
+1. Todos sus tests están verdes (`composer test`)
+2. `composer check` pasa sin errores (pint + phpstan + pest)
+3. El código sigue las convenciones de las reglas de Cursor
+
+## Stack de testing
+
+- **Pest 3** (`pestphp/pest`) como runner
+- Plugin `pest-plugin-laravel` para feature tests Laravel
+- Plugin `pest-plugin-livewire` para tests de componentes Livewire 3
+- **Larastan** (nivel 6) para análisis estático
+- **Pint** para estilo de código
+
+## Comandos
+
+```bash
+composer test    # → vendor/bin/pest
+composer check   # → pint --test + phpstan analyse + pest
+```
+
+## Estructura de tests
+
+```
+tests/
+├── Pest.php                              # Helpers globales + uses()
+├── TestCase.php                          # Base: carga schema legacy, DatabaseTransactions
+├── Feature/
+│   ├── Auth/
+│   │   ├── StaffLoginTest.php
+│   │   ├── AlumnoLoginTest.php
+│   │   └── RehashOnLoginTest.php
+│   ├── Permisos/
+│   │   ├── PermisoSlugMapTest.php
+│   │   ├── GatesTest.php
+│   │   ├── EnsurePermisoMiddlewareTest.php
+│   │   └── MenuResolverTest.php
+│   ├── Nucleo/
+│   │   ├── AbmTerlecTest.php
+│   │   ├── AbmNivelesTest.php
+│   │   ├── AbmPlanesTest.php
+│   │   ├── AbmCurPlanMatPlanTest.php
+│   │   ├── AbmEntoTest.php
+│   │   ├── AbmLegajosTest.php
+│   │   ├── GenerarCursoTest.php
+│   │   ├── EditarMateriasIntegridadTest.php
+│   │   └── MatricularAlumnoTest.php
+│   ├── Autogestion/
+│   │   └── AlumnoDashboardTest.php
+│   └── Integracion/
+│       └── FlujoCompletoCicloLectivoTest.php
+└── Unit/
+    ├── CalificacionesAdapterInicialTest.php
+    ├── CalificacionesAdapterPrimarioTest.php
+    ├── CalificacionesAdapterSecundarioTest.php
+    └── EntornoServiceTest.php
+```
+
+## Helpers globales (tests/Pest.php)
+
+```php
+// Autenticar como staff con nivel y terlec en sesión
+function actingAsStaff(Profesor $profesor, int $nivelId, int $terlecId): TestCase
+{
+    test()->actingAs($profesor, 'staff');
+    session(['nivel_id' => $nivelId, 'terlec_id' => $terlecId]);
+    return test();
+}
+
+// Autenticar como alumno
+function actingAsAlumno(LegajoAuth $legajo): TestCase
+{
+    return test()->actingAs($legajo, 'alumno');
+}
+
+// Activar un permiso específico en el profesor
+function conPermiso(Profesor $profesor, int $orden): Profesor
+{
+    $permisos = str_split(str_pad($profesor->permisos ?? '', 50, '0'));
+    $permisos[$orden] = '1';
+    $profesor->permisos = implode('', $permisos);
+    $profesor->save();
+    return $profesor;
+}
+
+// Desactivar un permiso específico
+function sinPermiso(Profesor $profesor, int $orden): Profesor
+{
+    $permisos = str_split(str_pad($profesor->permisos ?? '', 50, '0'));
+    $permisos[$orden] = '0';
+    $profesor->permisos = implode('', $permisos);
+    $profesor->save();
+    return $profesor;
+}
+```
+
+## Cobertura mínima por módulo
+
+### ABMs (terlec, niveles, planes, curplan+matplan, ento, legajos)
+- 1 test alta OK
+- 1 test edición OK
+- 1 test baja OK
+- 1 test baja bloqueada por dependencias
+- 1 test validación de campos obligatorios
+
+### Servicios transaccionales (GenerarCursoService, MatricularAlumnoService, MateriaIntegridadService)
+- 1 test camino feliz con verificación de efectos (conteos + FKs correctas)
+- 1 test de rollback ante error (mock que lanza excepción, verifica que NO quedaron registros parciales)
+
+### Livewire con lógica
+- 1 test con `Livewire::test()` por componente con lógica no trivial
+
+### Permisos
+- 1 test que verifica que con bit=1 concede
+- 1 test que verifica que con bit=0 deniega
+
+## Factories obligatorias
+
+Crear en `database/factories/`:
+
+- `TerlecFactory` — estado `activo()` (orden = 1)
+- `NivelFactory`
+- `PlanFactory`
+- `CurPlanFactory`
+- `MatPlanFactory`
+- `CursoFactory`
+- `MateriaFactory`
+- `LegajoFactory` — estado `conMatriculaEn($curso)`
+- `MatriculaFactory`
+- `CalificacionFactory`
+- `EntoFactory`
+- `ProfesorFactory` — estados `admin()` (permisos todo 1), `profesor()` (rol Profesor/a)
+- `PermisoUsuarioFactory`
+
+## Reglas de oro
+
+1. **Tests NUNCA escriben contra la BD de producción**: `.env.testing` apunta a `mysql_testing` local
+2. **DatabaseTransactions por defecto**: cada test corre en transacción que se revierte al final
+3. **Todo servicio con escrituras múltiples tiene test de rollback**
+4. **Prohibido usar `RefreshDatabase` en tests que ya usan el schema dump** (sería muy lento)
+5. **Prohibido commitear con tests en rojo**

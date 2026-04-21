@@ -1,0 +1,120 @@
+---
+description: "Reglas de seguridad y autenticación. Siempre activo."
+alwaysApply: true
+---
+
+# Seguridad y autenticación — Reglas obligatorias
+
+## Prohibiciones absolutas
+
+1. ❌ **NO crear tabla `users`** de Laravel ni instalar `spatie/laravel-permission`.
+   El auth se resuelve sobre `profesores` y `legajos` existentes.
+
+2. ❌ **NO escribir `pwrd` en texto plano** desde código nuevo.
+   Todo seteo de contraseña pasa por `Hash::make()`.
+
+3. ❌ **NO exponer `pwrd`** en respuestas JSON, logs, ni formularios de edición.
+   Solo existe un endpoint dedicado de "cambiar/blanquear clave".
+
+## Autenticación
+
+### Staff
+- Guard: `staff`
+- Tabla: `profesores`
+- Campo usuario: `dni`
+- Campo clave: `pwrd`
+- Provider: `App\Auth\LegacyUserProvider`
+- Formulario: `/login/staff` (DNI + clave + nivel + ciclo lectivo)
+
+### Alumnos/familias
+- Guard: `alumno`
+- Tabla: `legajos`
+- Campo usuario: `dni`
+- Campo clave: `pwrd`
+- Provider: `App\Auth\LegacyUserProvider` (configurado para legajos)
+- Formulario: `/login/alumno` (DNI + clave)
+
+## Validación híbrida de passwords
+
+```php
+// App\Auth\LegacyUserProvider::validateCredentials()
+public function validateCredentials(Authenticatable $user, array $credentials): bool
+{
+    $plain  = $credentials['password'];
+    $stored = $user->getAuthPassword();
+
+    if ($stored === null || $stored === '') {
+        return false;
+    }
+
+    // Hash nuevo (bcrypt, argon2)
+    if (Str::startsWith($stored, ['$2y$', '$argon2i$', '$argon2id$'])) {
+        return Hash::check($plain, $stored);
+    }
+
+    // Plain text legacy → acepta y dispara rehash
+    if (hash_equals($stored, $plain)) {
+        event(new PasswordShouldBeRehashed($user));
+        return true;
+    }
+
+    return false;
+}
+```
+
+## Migración progresiva de passwords
+
+El listener de `PasswordShouldBeRehashed` reemplaza el `pwrd` plain text por bcrypt en cada login exitoso:
+
+```php
+class RehashPasswordListener
+{
+    public function handle(PasswordShouldBeRehashed $event): void
+    {
+        $user = $event->user;
+        $user->forceFill(['pwrd' => Hash::make($event->plainTextPassword)])->save();
+    }
+}
+```
+
+**No hacer nada a mano**: el padrón migra solo con cada login.
+
+## Autorización (staff)
+
+- NO usar Roles/Policies de Spatie. Usar **Laravel Gates** registrados en `AuthServiceProvider`.
+- Los Gates se nombran con slug derivado de `permisosusuarios.tema`:
+  - Ejemplo: orden 0 → tema `ADMINISTRACION / PERMISOS` → gate `administracion.permisos`
+- Helper en modelo `Profesor`:
+
+```php
+public function tienePermiso(int $orden): bool
+{
+    return ($this->permisos[$orden] ?? '0') === '1';
+}
+```
+
+- Uso en vistas: `@can('administracion.permisos')` / `@cannot(...)`
+- Uso en código: `Gate::allows('administracion.permisos')`
+- Uso en middleware: `EnsurePermiso:administracion.permisos` o `EnsurePermiso:0`
+
+## Autorización (alumnos)
+
+Acceso restringido a `idLegajos = auth('alumno')->id()` vía policies:
+
+```php
+// App\Policies\MatriculaPolicy
+public function view(LegajoAuth $user, Matricula $matricula): bool
+{
+    return $matricula->idLegajos === $user->id;
+}
+```
+
+## Middlewares
+
+| Middleware | Uso |
+|---|---|
+| `EnsureStaffAuth` | Protege rutas `/staff/*` — redirige a `/login/staff` si no autenticado |
+| `EnsureAlumnoAuth` | Protege rutas `/alumno/*` — redirige a `/login/alumno` si no autenticado |
+| `EnsurePermiso` | Verifica bit en `profesores.permisos` para la ruta/recurso |
+| `InjectStaffContext` | Expone `nivel_id` y `terlec_id` de sesión vía `ContextoStaff` |
+| `InjectAutogestionContext` | Expone nivel y ciclo de autogestión vía `ContextoAutogestion` |

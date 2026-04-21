@@ -1,0 +1,85 @@
+---
+description: "Protege la relación matplan<->materias que sostiene previas y analítico. Siempre activo."
+alwaysApply: true
+---
+
+# Integridad curso-materia — Reglas críticas
+
+## Contexto
+
+La relación `materias.idMatPlan -> matplan.id` es **CRÍTICA** para:
+- El sistema de **previas** (calificaciones.idMatPlan → matplan identifica la materia adeudada)
+- El **certificado analítico** (vincula la nota del año con la materia modelo)
+
+## Regla 1: NO romper idMatPlan
+
+**PROHIBIDO** cambiar, nullear o setear en 0 el campo `materias.idMatPlan` de una materia
+que ya fue creada con vínculo, **excepto** que sea una "materia extraordinaria del año"
+explícitamente marcada como tal (y registrada en auditoría).
+
+```php
+// ❌ PROHIBIDO
+$materia->update(['idMatPlan' => 0]);
+$materia->update(['idMatPlan' => null]);
+
+// ✅ Usar siempre MateriaIntegridadService
+app(MateriaIntegridadService::class)->renombrar($materia, $nuevoNombre, propagarAMatplan: true);
+```
+
+## Regla 2: Crear cursos del año (GenerarCursoService)
+
+Al crear un curso del año, **siempre** usar `GenerarCursoService` (transacción atómica):
+
+1. INSERT en `cursos`
+2. Por cada `matplan` del `curplan` elegido, INSERT en `materias` con `idMatPlan` vinculado
+
+```php
+// ✅ Correcto
+$curso = app(GenerarCursoService::class)->crear($curPlanId, $terlecId, $nivelId, $datos);
+
+// ❌ Incorrecto: crear el curso y luego manualmente las materias
+$curso = Curso::create([...]);
+// NO hacer esto sin el servicio
+```
+
+## Regla 3: Renombrar una materia del año
+
+Si el cambio de nombre es **definitivo** (no solo para el año actual), usar:
+```
+MateriaIntegridadService::renombrar($materia, $nuevoNombre, propagarAMatplan: true)
+```
+Esto actualiza `matplan.matPlanMateria` **y** `materias.materia` en la **misma transacción**.
+
+## Regla 4: Agregar una materia al curso del año
+
+- **Opción A (por defecto)**: Crear primero el `matplan` y luego la `materia` con `idMatPlan` vinculado.
+  ```
+  MateriaIntegridadService::agregarConModelo($curso, $nombreMateria, $datos)
+  ```
+- **Opción B (excepcional)**: Materia extraordinaria del año (sin modelo), con `idMatPlan = 0` y
+  flag `esExtraordinaria = true` en auditoría.
+  ```
+  MateriaIntegridadService::agregarExtraordinaria($curso, $nombreMateria, $datos)
+  ```
+
+## Regla 5: Quitar una materia del año
+
+- La acción por defecto **solo quita de `materias`** (no toca `matplan`).
+- Solo se borra también de `matplan` si el usuario lo solicita explícitamente **Y** no hay
+  otras `materias` en otros años que referencien ese `matplan.id`.
+  ```
+  MateriaIntegridadService::quitar($materia, quitarDeMatplan: false) // por defecto
+  MateriaIntegridadService::quitar($materia, quitarDeMatplan: true)  // solo si no hay refs
+  ```
+
+## Regla 6: Bajas de curplan y matplan
+
+- **No borrar un `curplan`** si hay `cursos` del año que lo referencian (`cursos.idCurPlan`).
+- **No borrar un `matplan`** si hay `materias` del año que lo referencian (`materias.idMatPlan`).
+- Validar antes de presentar la opción de baja al usuario.
+
+## Implementación
+
+Toda operación que involucre las tablas `cursos`, `materias`, `matplan` o `curplan` de forma
+modificatoria pasa por un servicio dedicado (`GenerarCursoService` o `MateriaIntegridadService`)
+que garantiza las validaciones y la atomicidad.
